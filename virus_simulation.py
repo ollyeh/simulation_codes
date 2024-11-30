@@ -120,10 +120,10 @@ class Grid:
 
     def update(self, susceptible_list, infected_list, immune_list, killed_list):
         """
-        :param susceptible_list: is an empty list in which the cumulative sum of susceptible agents will be stores
-        :param infected_list: is an empty list in which the cumulative sum of infected agents will be stores
-        :param immune_list: is an empty list in which the cumulative sum of immune agents will be stores
-        :param killed_list: is an empty list in which the cumulative sum of killed agents will be stores
+        :param susceptible_list: is an empty list in which the cumulative sum of susceptible agents will be stored
+        :param infected_list: is an empty list in which the cumulative sum of infected agents will be stored
+        :param immune_list: is an empty list in which the cumulative sum of immune agents will be stored
+        :param killed_list: is an empty list in which the cumulative sum of killed agents will be stored
         :return: the filled lists as well as a matrix representation of the grid
         """
         neighbors = []
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     for i in tqdm(range(100)):
         n_susceptible, n_infected, n_immune, n_killed, states = grid.update(n_susceptible, n_infected, n_immune, n_killed)
 
-    # indent in the following lines and set the argument in the savefig function to "images/last.png".format(i) to store the individual time steps
+    # indent in the following lines and set the argument in the savefig function to "images/{}.png".format(i) to store the individual time steps
     ax_grid.imshow(states, cmap=cmap, norm=norm)
     ax_graph.plot(n_susceptible, color=colors[0])
     ax_graph.plot(n_infected, color=colors[1])
