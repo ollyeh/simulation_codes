@@ -5,7 +5,7 @@ Simulation codes is a collection of very simple python programs which model prob
 ## ideal_gas.ipynb
 Make sure you have Jupyter Notebook or VSCode installed, depending on your personal preference. I decided to use the ArtistAnimation class from matplotlib, which exports the simulation as a mp4 video. Therefore, make sure you have ffmpeg installed as well. In the Notebook you get a step by step walkthrough of my thoughts, when I implemented the time evolution, the elastic collisions and the impulse histogram. Over time new functions will be implemented following the same step by step fashion! Note that explainer sections will be added as soon as I have more time. :)
 
-![Early step of the simulation](examples/ideal_gas_beginning.jpg)
+![Early step of the simulation](examples/ideal_gas_beginning.png)
 
 ## virus_simulation.py
 Make sure you have numpy, matplotlib and tqdm installed. In the Virus property class you can specify the virus' behaviour. Colors of the individual agents can be specified in the if \_\_name\_\_ == "\_\_main\_\_" codeblock in line 190. Here in order to obtain a discrete colormap of 4 colors for all four possible, the argument range ranges from 0 to 3. Currently, blue agents are susceptible to the virus, green agents are infected, yellow agents have recovered and black agents are dead. Please feel free to add a legend and add titles to the axes if needed. :)
