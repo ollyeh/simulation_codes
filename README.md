@@ -4,7 +4,8 @@ Simulation codes is a collection of very simple python programs which model prob
 
 ## ideal_gas.ipynb
 Make sure you have Jupyter Notebook or VSCode installed, depending on your personal preference. I decided to use the ArtistAnimation class from matplotlib, which exports the simulation as a mp4 video. Therefore, make sure you have ffmpeg installed as well. In the Notebook you get a step by step walkthrough of my thoughts, when I implemented the time evolution, the elastic collisions and the impulse histogram. Over time new functions will be implemented following the same step by step fashion! Note that explainer sections will be added as soon as I have more time. :)
-<img src="examples/ideal_gas_end.png" alt="ideal_gas_eng.png" width="200"/>
+
+<img src="examples/ideal_gas_end.png" alt="ideal_gas_eng.png" width="500"/>
 
 
 ## virus_simulation.py
