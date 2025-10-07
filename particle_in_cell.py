@@ -5,15 +5,6 @@ import functools
 import sys
 from vispy import scene, app
 
-
-def redirect_stdout(func):
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            with open("simulation.out", "w") as sys.stdout:
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
-
 class Logger(logging.Logger):
     def __init__(self, name: str, level: logging.__annotations__ = logging.NOTSET):
         super().__init__(name, level)
