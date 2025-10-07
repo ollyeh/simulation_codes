@@ -75,50 +75,25 @@ class Simulator:
                 if distance <= collective_radius:
                     self.separate_particle_pair(distance, collective_radius, i, j)
 
-    def periodic_fwd_step(self):
-        self.pos = (self.pos + self.vel*self.dt)%self.box.length
-        
     def visual_periodic_fwd_step(self, event):
-        if self.step > self.n_steps:
-            self.timer.stop()
+        logger.info(f"Step: {self.step} / {self.n_steps-1}")
         self.pos = (self.pos + self.vel*self.dt)%self.box.length
         self.scatter.set_data(self.pos)
         self.step += 1
-        logger.info(f"Step: {self.step} / {self.n_steps-1}")
+        if self.step >= self.n_steps:
+            self.timer.stop()
     
     def visual_periodic_collision_fwd_step(self, event):
-        if self.step > self.n_steps:
-            self.timer.stop()
+        logger.info(f"Step: {self.step} / {self.n_steps-1}")
         self.track_collisions()
         self.pos = (self.pos + self.vel*self.dt)%self.box.length
         self.scatter.set_data(self.pos)
         self.step += 1
-        logger.info(f"Step: {self.step} / {self.n_steps-1}")
-
-    def reflective_fwd_step(self):
-        self.wall_counter = 0
-        for i in range(len(self.pos[:, 0])):
-            if self.pos[i, 0] <= 0:
-                self.vel[i, 0] = -self.vel[i, 0]
-            elif self.pos[i, 0] >= self.box.length:
-                self.vel[i, 0] = -self.vel[i, 0]
-            elif self.pos[i, 1] <= 0:
-                self.vel[i, 1] = -self.vel[i, 1]
-            elif self.pos[i, 1] >= self.box.length:
-                self.vel[i, 1] = -self.vel[i, 1]
-            elif self.pos[i, 2] <= 0:
-                self.vel[i, 2] = -self.vel[i, 2]
-            elif self.pos[i, 2] >= self.box.length:
-                self.vel[i, 2] = -self.vel[i, 2]
-
-        self.pos = self.pos + self.vel*self.dt
-
-    
-    def visual_reflective_fwd_step(self, event):
-        if self.step > self.n_steps:
+        if self.step >= self.n_steps:
             self.timer.stop()
 
-        self.wall_counter = 0
+    def visual_reflective_fwd_step(self, event):
+        logger.info(f"Step: {self.step} / {self.n_steps-1}")
         for i in range(len(self.pos[:, 0])):
             if self.pos[i, 0] <= 0:
                 self.vel[i, 0] = -self.vel[i, 0]
@@ -135,13 +110,12 @@ class Simulator:
         self.pos = self.pos + self.vel*self.dt
         self.scatter.set_data(self.pos)
         self.step += 1
-        logger.info(f"Step: {self.step} / {self.n_steps-1}")
+        if self.step >= self.n_steps:
+            self.timer.stop()
 
     
     def visual_reflective_collision_fwd_step(self, event):
-        if self.step > self.n_steps:
-            self.timer.stop()
-        self.wall_counter = 0
+        logger.info(f"Step: {self.step} / {self.n_steps-1}")
         self.track_collisions()
         for i in range(len(self.pos[:, 0])):
             if self.pos[i, 0] <= 0:
@@ -159,32 +133,9 @@ class Simulator:
         self.pos = self.pos + self.vel*self.dt
         self.scatter.set_data(self.pos)
         self.step += 1
-        logger.info(self.wall_counter)
-        #logger.info(f"Step: {self.step} / {self.n_steps-1}")
+        if self.step >= self.n_steps:
+            self.timer.stop()
 
-    def periodic_run(self):
-        for step in range(self.n_steps):
-            logger.info(f"Step: {step} / {self.n_steps-1}")
-            self.periodic_fwd_step()
-    
-    def periodic_collision_run(self):
-        self.track_collisions()
-        for step in range(self.n_steps):
-            logger.info(f"Step: {step} / {self.n_steps-1}")
-            self.periodic_fwd_step()
-
-        
-    def reflective_run(self):
-        for step in range(self.n_steps):
-            logger.info(f"Step: {step} / {self.n_steps-1}")
-            self.reflective_fwd_step()
-    
-    def reflective_collision_run(self):
-        self.track_collisions()
-        for step in range(self.n_steps):
-            logger.info(f"Step: {step} / {self.n_steps-1}")
-            self.reflective_fwd_step()
-    
     def set_up_visual(self):
         self.canvas = scene.SceneCanvas(bgcolor="black", size=(300, 800), show=False)
         view = self.canvas.central_widget.add_view()
@@ -197,37 +148,6 @@ class Simulator:
         box.transform = scene.transforms.STTransform(translate=(self.box.length/2, self.box.length/2, self.box.length/2))
         view.add(box)
     
-    def run(self) -> None:
-        logger.sep()
-        logger.info("Starting simulation run with the following parameters:")
-        for key, val in zip(self.kwargs.keys(), self.kwargs.values()):
-            logger.info(f"{key}:\t {val}")
-        logger.info(f"Periodic box:\t {self.box.periodic}")
-
-        self.radii: NDArray = np.random.uniform(size=(self.n_particles, 1), low=self.min_radius, high=self.max_radius)
-        
-        logger.sep()
-        logger.info("Choosing positions and velocities...")
-        self.pos: NDArray = np.random.uniform(size=(self.n_particles, 3), low=1, high=self.box.length-1)
-        self.vel: NDArray = np.random.uniform(size=(self.n_particles, 3), low=self.min_velocity, high=self.max_velocity)
-
-        logger.sep()
-        logger.info("Entering dynamics ...")
-            
-
-        # here we specify the simulation mode
-
-        if self.box.periodic and self.min_radius == 0 and self.max_radius == 0:
-            self.periodic_run()
-        elif self.box.periodic:
-            self.periodic_collision_run()
-        elif not self.box.periodic and self.min_radius == 0 and self.max_radius == 0:
-            self.reflective_run()
-        else:
-            self.reflective_collision_run()
-        
-        return None
-
 
     def visual_run(self) -> None:
         logger.sep()
@@ -266,6 +186,6 @@ class Simulator:
 
 if __name__ == "__main__":
     box = Box(50, periodic=False)
-    sim = Simulator(box, n_particles=100, min_radius=0, max_radius=0, n_steps=10000, dt=0.0001, min_velocity=0, max_velocity=500)
+    sim = Simulator(box, n_particles=100, min_radius=0, max_radius=0, n_steps=100, dt=0.0001, min_velocity=0, max_velocity=500)
     sim.visual_run()
 
