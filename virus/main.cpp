@@ -3,16 +3,18 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <opencv2/opencv.hpp>
 #include <omp.h>
+#include <nlohmann/json.hpp>
 
 struct Virus
 {
-   float mean_contagious_period = 100;
+   float mean_contagious_period = 49;
    float sdev_contagious_period = 3;
    float mean_immune_period = 50;
    float sdev_immune_period = 10;
-   float kill_prop = 0.001;
-   float infect_prop = 0.1;
+   float kill_prop = 1;
+   float infect_prop = 0.2;
 };
 
 constexpr Virus virus;
@@ -113,14 +115,14 @@ public:
          }
       }
    }
-   //vec.emplace_back(std::make_unique<Foo>(30));
 
-   void update() const {
+   void update_simulation() const {
       int n_susceptible = 0;
       int n_infected = 0;
       int n_immune = 0;
       int n_killed = 0;
       for (int i = 0; i < n; i++) {
+         #pragma omp parallel for
          for (int j = 0; j < n; j++) {
 
             bool const infected = (m_agent_unique_ptrs[i][j]->get_status() == 1);
@@ -170,16 +172,53 @@ public:
       }
       m_stats_ptr->push_back({n_susceptible, n_infected, n_immune, n_killed});
    }
+   void update_visuals(cv::Mat *image_ptr) {
+      for (int i = 0; i < n; i++) {
+         for (int j = 0; j < n; j++) {
+            if (m_agent_unique_ptrs[i][j]->get_status() == 0) {
+               image_ptr->at<cv::Vec3b>(i, j) = cv::Vec3b(139, 82, 59);
+            }
+            else if (m_agent_unique_ptrs[i][j]->get_status() == 1) {
+               image_ptr->at<cv::Vec3b>(i, j) =  cv::Vec3b(37, 231, 253);
+            }
+            else if (m_agent_unique_ptrs[i][j]->get_status() == 2) {
+               image_ptr->at<cv::Vec3b>(i, j) =  cv::Vec3b(98, 201, 94);
+            }
+            else if (m_agent_unique_ptrs[i][j]->get_status() == 3) {
+               image_ptr->at<cv::Vec3b>(i, j) =  cv::Vec3b(100, 0, 0);
+            }
+         }
+      }
+   }
 };
 
 int main()
 {
-   int n_steps = 10;
+   int n_steps = 10000;
+   int n = 500;
+   bool visual = true;
 
    std::vector<std::array<int, 4>> stats;
 
-   Grid grid(100, &stats);
-   for (int i = 0; i < n_steps; i++) {
-      grid.update();
+   Grid grid(n, &stats);
+
+   if (visual == true) {
+
+      cv::namedWindow("Simulation", cv::WINDOW_NORMAL);
+      cv::resizeWindow("Simulation", n, n);
+      cv::Mat image(n, n, CV_8UC3, cv::Scalar(255, 255, 255));
+
+      cv::imshow("Simulation", image);
+      for (int i = 0; i < n_steps; i++) {
+         grid.update_visuals(&image);
+         cv::imshow("Simulation", image);
+         grid.update_simulation();
+         cv::waitKey(1);
+      }
+   }
+   else {
+      for (int i = 0; i < n_steps; i++) {
+         grid.update_simulation();
+      }
    }
 }
