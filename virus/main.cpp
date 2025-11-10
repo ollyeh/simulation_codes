@@ -1,7 +1,9 @@
 #include <iostream>
 #include <random>
 #include <array>
+#include <vector>
 #include <memory>
+#include <omp.h>
 
 struct Virus
 {
@@ -14,7 +16,6 @@ struct Virus
 };
 
 constexpr Virus virus;
-constexpr size_t n = 5;
 
 class Agent {
 private:
@@ -57,7 +58,7 @@ public:
       m_status = 2;
    }
 
-   void get_status() {
+   int get_status() {
       // pick time periods from normal distributions
       int m_contagious_period = m_contagious_distribution(m_generator);
       int m_immune_period = m_immune_distribution(m_generator);
@@ -80,37 +81,105 @@ public:
             (void)0;
          }
       }
+      return m_status;
    }
 };
 
 class Grid {
 private:
-   std::array<std::array<std::unique_ptr<Agent>, n>, n> m_agent_ptrs;
+   inline static thread_local std::default_random_engine m_generator;
+   inline static std::uniform_real_distribution<float> m_uniform_real_distribution;
+   std::vector<std::vector<std::unique_ptr<Agent>>> m_agent_unique_ptrs;
+   std::vector<std::array<int, 4>> *m_stats_ptr;
+
+
 public:
-   explicit Grid() {
+   int n;
+   explicit Grid(int n, std::vector<std::array<int, 4>> *stats_ptr) {
+      this -> n = n;
+      m_stats_ptr = stats_ptr;
+
+      m_agent_unique_ptrs.resize(n);
       for (int i = 0; i < n; i++) {
+         m_agent_unique_ptrs[i].resize(n);
          for (int j = 0; j < n; j++) {
-            Agent agent(i, j);
-            m_agent_ptrs[i][j] = std::make_unique<Agent>(agent);
+            m_agent_unique_ptrs[i][j] = std::make_unique<Agent>(i, j);
             if (i==j) {
-               agent.infect();
+               m_agent_unique_ptrs[i][j]->infect();
             }
             else {
-               agent.make_susceptible();
+               m_agent_unique_ptrs[i][j]->make_susceptible();
             }
          }
       }
    }
+   //vec.emplace_back(std::make_unique<Foo>(30));
 
+   void update() const {
+      int n_susceptible = 0;
+      int n_infected = 0;
+      int n_immune = 0;
+      int n_killed = 0;
+      for (int i = 0; i < n; i++) {
+         for (int j = 0; j < n; j++) {
+
+            bool const infected = (m_agent_unique_ptrs[i][j]->get_status() == 1);
+            bool const exceeded_prop = (m_uniform_real_distribution(m_generator) >= 1-virus.infect_prop);
+
+            if (infected and m_agent_unique_ptrs[(i-1+n)%n][(j-1+n)%n]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[(i-1+n)%n][(j-1+n)%n]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[(i-1+n)%n][j]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[(i-1+n)%n][j]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[(i-1+n)%n][(j+1)%n]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[(i-1+n)%n][(j+1)%n]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[i%n][(j-1+n)%n]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[i%n][(j-1+n)%n]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[i%n][j]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[i%n][j]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[i%n][(j+1)%n]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[i%n][(j+1)%n]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[(i+1)%n][(j-1+n)%n]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[(i+1)%n][(j-1+n)%n]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[(i+1)%n][j]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[(i+1)%n][j]->infect();
+            }
+            else if (infected and m_agent_unique_ptrs[(i+1)%n][(j+1)%n]->get_status() == 0 and exceeded_prop) {
+               m_agent_unique_ptrs[(i+1)%n][(j+1)%n]->infect();
+            }
+
+            if (m_agent_unique_ptrs[i][j]->get_status() == 0) {
+               n_susceptible++;
+            }
+            else if (m_agent_unique_ptrs[i][j]->get_status() == 1) {
+               n_infected++;
+            }
+            else if (m_agent_unique_ptrs[i][j]->get_status() == 2) {
+               n_immune++;
+            }
+            else if (m_agent_unique_ptrs[i][j]->get_status() == 3) {
+               n_killed++;
+            }
+         }
+      }
+      m_stats_ptr->push_back({n_susceptible, n_infected, n_immune, n_killed});
+   }
 };
 
 int main()
 {
-   Agent agent(3, 3);
-   agent.get_status();
-   agent.get_status();
-   agent.get_status();
-   agent.get_status();
-   agent.get_status();
-   Grid grid;
+   int n_steps = 10;
+
+   std::vector<std::array<int, 4>> stats;
+
+   Grid grid(100, &stats);
+   for (int i = 0; i < n_steps; i++) {
+      grid.update();
+   }
 }
